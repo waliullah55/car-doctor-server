@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
-const products = require("./data/products.json");
+// const products = require("./data/products.json");
 // const service = require('./data/service.json');
 const team = require("./data/team.json");
 
@@ -48,16 +48,33 @@ async function run() {
 
     const serviceCollection = client.db("carDoctor").collection("services");
     const checkoutCollection = client.db("carDoctor").collection("checkouts");
+    const productCollection = client.db("carDoctor").collection("products");
 
     // jwt
     app.post("/jwt", (req, res) => {
       const user = req.body;
       console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: '1h',
+        expiresIn: "1h",
       });
       console.log(token);
       res.send({ token });
+    });
+
+    // products
+    app.get("/products", async (req, res) => {
+      console.log(req.query);
+      const page = parseInt(req.query.page || 0);
+      const limit = parseInt(req.query.limit || 10);
+      const skip = page * limit;
+
+      const result = await productCollection.find().skip(skip).limit(limit).toArray();
+      res.send(result);
+    });
+
+    app.get("/totalProduct", async (req, res) => {
+      const result = await productCollection.estimatedDocumentCount();
+      res.send({ totalProduct: result });
     });
 
     // get data
@@ -129,14 +146,13 @@ async function run() {
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    // await client.close();
   }
 }
 run().catch(console.dir);
 
-app.get("/products", (req, res) => {
-  res.send(products);
-});
+// app.get("/products", (req, res) => {
+//   res.send(products);
+// });
 
 // app.get('/services', (req, res) => {
 //     res.send(service)
